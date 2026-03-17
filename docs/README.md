@@ -113,14 +113,3 @@ docs/
 
 ---
 
-## 🌐 其他资源
-
-- **主 README**: [../README.md](../README.md) - 项目主页和快速链接
-- **GitHub 仓库**: [MPE_muiltiagent_benchmark](https://github.com/HuangShengZeBlueSky/MPE_muiltiagent_benchmark)
-- **PettingZoo 官方文档**: https://pettingzoo.farama.org/environments/mpe/
-
----
-
-**需要帮助？** 请查看 [GitHub Issues](https://github.com/HuangShengZeBlueSky/MPE_muiltiagent_benchmark/issues) 或提交新问题。
-
-**最后更新**: 2026-01-26

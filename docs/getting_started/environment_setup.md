@@ -9,7 +9,7 @@
 | 组件 | 要求 | 说明 |
 |------|------|------|
 | **Python** | 3.8+ | 推荐 3.12.3（已测试） |
-| **操作系统** | Linux / macOS / Windows | 跨平台支持 |
+| **操作系统** |  Windows | 跨平台支持 |
 | **内存** | 2GB+ | 视频生成需要额外内存 |
 | **磁盘空间** | 1GB+ | 包括依赖和结果文件 |
 | **网络** | 需要 | 下载依赖和调用 API |
@@ -22,8 +22,8 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/HuangShengZeBlueSky/MPE_muiltiagent_benchmark.git
-cd MPE_muiltiagent_benchmark
+git clone https://github.com/StephenRawkingtokamak/MPE_Cognition
+cd MPE_Cognition
 
 # 2. 创建虚拟环境
 python3 -m venv .venv
@@ -41,8 +41,8 @@ python -c "import pettingzoo; import openai; print('✅ 安装成功')"
 
 ```powershell
 # 1. 克隆仓库
-git clone https://github.com/HuangShengZeBlueSky/MPE_muiltiagent_benchmark.git
-cd MPE_muiltiagent_benchmark
+git clone https://github.com/StephenRawkingtokamak/MPE_Cognition
+cd MPE_Cognition
 
 # 2. 创建虚拟环境
 python -m venv .venv
@@ -318,7 +318,7 @@ docker run -v $(pwd)/results:/app/results mpe-benchmark
 1. **查看错误日志**: 复制完整错误信息
 2. **检查版本**: 确认 Python 和 pip 版本
 3. **尝试清理**: `pip cache purge && pip install -r requirements.txt`
-4. **提交 Issue**: [GitHub Issues](https://github.com/HuangShengZeBlueSky/MPE_muiltiagent_benchmark/issues)
+
 
 ---
 

@@ -28,8 +28,8 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/your-username/MPE_muiltiagent_benchmark.git
-cd MPE_muiltiagent_benchmark
+git clone https://github.com/StephenRawkingtokamak/MPE_Cognition
+cd  MPE_Cognition
 
 # 2. 安装依赖
 pip install -r requirements.txt

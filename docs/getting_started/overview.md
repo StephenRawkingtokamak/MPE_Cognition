@@ -296,6 +296,6 @@ MIT License
 
 ---
 
-**作者**: HuangShengZeBlueSky  
-**仓库**: [MPE_muiltiagent_benchmark](https://github.com/HuangShengZeBlueSky/MPE_muiltiagent_benchmark)  
+**作者**: StephenRawkingtokamak
+**仓库**: [MPE_Cognition](https://github.com/StephenRawkingtokamak/MPE_Cognition)  
 **最后更新**: 2026-01-24

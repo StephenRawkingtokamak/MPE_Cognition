@@ -3,7 +3,7 @@ name = "mpe-multiagent-benchmark"
 version = "1.0.0"
 description = "Multi-agent benchmark suite for PettingZoo MPE environments with LLM integration"
 authors = [
-    { name = "HuangShengZeBlueSky", email = "" }
+    { name = "StephenRawkingtokamak", email = "" }
 ]
 readme = "README.md"
 requires-python = ">=3.8"

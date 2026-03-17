@@ -1,6 +1,6 @@
 # 🚀 快速开始指南
 
-欢迎使用 MPE Multi-Agent Benchmark！本指南将帮助你在 5 分钟内开始使用。
+欢迎使用 MPE Cognition！本指南将帮助你在 5 分钟内开始使用。
 
 ## 📋 前置要求
 
@@ -11,8 +11,8 @@
 ## 1️⃣ 克隆仓库
 
 ```bash
-git clone https://github.com/HuangShengZeBlueSky/MPE_muiltiagent_benchmark.git
-cd MPE_muiltiagent_benchmark
+git clone https://github.com/StephenRawkingtokamak/MPE_Cognition
+cd MPE_Cognition
 ```
 
 ## 2️⃣ 安装依赖
@@ -214,8 +214,8 @@ print_raw_observation(obs, agent_id, segments)
 ## 🆘 获取帮助
 
 - 📖 查看文档: `PROJECT_OVERVIEW.md`, `OBS_PARSING_GUIDE.md`
-- 💬 提交 Issue: [GitHub Issues](https://github.com/HuangShengZeBlueSky/MPE_muiltiagent_benchmark/issues)
-- 📧 联系作者: HuangShengZeBlueSky
+- 💬 提交 Issue: [GitHub Issues](https://github.com/StephenRawkingtokamak/MPE_Cognition)
+- 📧 联系作者: StephenRawkingtokamak
 
 ## 🎉 开始你的旅程！
 
@@ -238,4 +238,4 @@ python spread_API.py
 ---
 
 **最后更新**: 2026-01-24  
-**项目地址**: https://github.com/HuangShengZeBlueSky/MPE_muiltiagent_benchmark
+**项目地址**: https://github.com/StephenRawkingtokamak/MPE_Cognition

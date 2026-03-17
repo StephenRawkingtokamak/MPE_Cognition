@@ -555,36 +555,113 @@ P_{modified}(T) = \text{Softmax}\left(\frac{\text{Logits} + \alpha \cdot \cos(\f
 \caption{时延环境下奖励反馈与实际动作的错位模型}
 \end{figure}
 
-\subsection{增强算法理论：基于势能奖励重构（PBRS）的策略不变性证明}
+\subsection{核心算法理论：基于复合势能奖励重构（PBRS）的策略引导}
 
-在具身演化任务中，传统的静态位置奖励（如欧氏距离）无法感知动态系统的惯性分布。为了引导模型预判动量风险，必须首先对势函数（Potential Function）进行重构，引入动量感知项以修正奖励信号。
+在多智能体博弈（MPE）任务中，简单的欧氏距离奖励往往导致模型因忽略惯性分布而产生“动能幻觉”。为了使智能体在预判动量风险的同时保持最优策略，我们引入基于势能的奖励重构（Potential-based Reward Shaping, PBRS）机制，并利用大模型的物理先验构建复合势函数。
 
-\begin{tcolorbox}[enhanced, colback=blue!5!white, colframe=SDUBlue, arc=2mm, title=\textbf{PBRS 理论推导与策略不变性证明}]
-\textbf{1. 势函数重构：} 我们定义包含动量感知项的势函数 $\Phi(s)$，通过速度矢量在目标方向上的投影来评价当前的物理能量状态，从而为模型提供“制动预判”：
+\begin{tcolorbox}[enhanced, colback=blue!5!white, colframe=SDUBlue, arc=2mm, title=\textbf{PBRS 理论推导、级数消去与策略不变性证明}]
+
+\textbf{1. 原生任务奖励函数定义：}
+原生任务奖励 $R_{push}$ 由三部分加权组成，旨在定义基础物理目标与安全约束：
 \begin{equation}
-\Phi(s) = -\lambda_1 \|p_{agent} - p_{target}\| - \lambda_2 \cdot \text{max}(0, \vec{V}_{agent} \cdot \vec{d}_{target})
+R_{push} = w_g r_{goal} + w_c r_{collision} + w_h r_{hint}
 \end{equation}
+其中，各子项的函数表达式定义如下：
+\begin{itemize}
+    \item \textbf{目标达成项 ($r_{goal}$)}：采用距离引导与脉冲激励：
+    \begin{equation}
+    r_{goal} = 
+    \begin{cases} 
+    +C_{success}, & \text{if } \|p_{agent} - p_{ball}\| < \epsilon \\
+    -\|p_{agent} - p_{ball}\|, & \text{otherwise}
+    \end{cases}
+    \end{equation}
+    \item \textbf{碰撞惩罚项 ($r_{collision}$)}：定义为智能体与障碍物重叠程度的惩罚：
+    \begin{equation}
+    r_{collision} = \sum_{i \in Obs} \min(0, \|p_{agent} - p_i\| - (d_{agent} + d_i))
+    \end{equation}
+    \item \textbf{稀疏引导项 ($r_{hint}$)}：在大模型语义引导下触发的阶段性增量奖励 $C_{hint}$。
+\end{itemize}
 
-\textbf{2. 引入 Ng 奖励重构思想：} 为确保辅助奖励的引入不导致智能体学习到偏离原始目标的次优策略，根据 Ng (1999) 提出的理论，我们将重构奖励项 $F$ 定义为连续状态间的势能差：
+\textbf{2. 复合势函数（Potential Function）重构：}
+利用 LLM 的物理先验，我们设计了包含位姿与二阶动量约束的势函数 $\Phi(s)$：
 \begin{equation}
-F(s, a, s') = \gamma \Phi(s') - \Phi(s)
+\Phi(s) = -k_1 \|p_{agent} - p_{ball}\| - k_2 (v_{agent} - v_{ball})^2
 \end{equation}
+其中，$-k_1$ 项构建静态引力场，$-k_2$ 项通过速度偏差的平方引入阻尼约束，抑制过冲现象。
 
-\textbf{3. 数学原理证明策略不变性：} 在重构后的马尔可夫决策过程（MDP）中，最优 $Q$ 函数满足 $Q_{M'}^*(s, a) = Q_M^*(s, a) - \Phi(s)$。对于任意决策状态 $s$，其最优动作选择满足：
+\textbf{3. 级数消去（Telescoping Sum）过程：}
+定义重构奖励项 $F(s, a, s') = \gamma \Phi(s') - \Phi(s)$。在无限时界下的累积折扣回报 $G'_t$ 展开为：
 \begin{align}
-\pi_{M'}^*(s) &= \arg\max_{a \in A} Q_{M'}^*(s, a) \\
-&= \arg\max_{a \in A} [Q_M^*(s, a) - \Phi(s)] \\
-&= \arg\max_{a \in A} Q_M^*(s, a) = \pi_M^*(s)
+G'_t &= \sum_{j=0}^{\infty} \gamma^j [r_{t+j} + \gamma \Phi(s_{t+j+1}) - \Phi(s_{t+j})] \nonumber \\
+&= (r_t + \gamma \Phi(s_{t+1}) - \Phi(s_t)) + \gamma(r_{t+1} + \gamma \Phi(s_{t+2}) - \Phi(s_{t+1})) + \dots \nonumber \\
+&= \sum_{j=0}^{\infty} \gamma^j r_{t+j} + \left[-\Phi(s_t) + \gamma \Phi(s_{t+1}) - \gamma \Phi(s_{t+1}) + \dots \right] \nonumber \\
+&= G_t - \Phi(s_t)
 \end{align}
-\textbf{结论：} 由于势函数 $\Phi(s)$ 与待优化的动作变量 $a$ 相互独立，该推导从数学上证明了 PBRS 在增强物理感知的过程中，逻辑上始终对齐原始任务的最优解。
+
+\textbf{4. 策略不变性结论：}
+对于任意决策状态 $s$，最优动作选择 $\pi_{M'}^*(s)$ 满足：
+\begin{equation}
+\pi_{M'}^*(s) = \arg\max_{a \in A} [Q_M^*(s, a) - \Phi(s)] = \arg\max_{a \in A} Q_M^*(s, a) = \pi_M^*(s)
+\end{equation}
+\textbf{结论：} 
+由于 $\Phi(s)$ 与动作变量 $a$ 独立，该机制在加速收敛的同时，数学上始终对齐原始任务的最优解。
 \end{tcolorbox}
 
+\subsection{演进动力学：非平稳环境下的信度解耦与准静态重塑}
 
+虽然 PBRS 在单智能体马尔可夫决策过程中具备完美的策略不变性，但在多智能体博弈（MARL）这一特定语境下，环境的非平稳性（Non-stationarity）使得原生势能函数面临严峻的鲁棒性挑战。本节从科学哲学视角深度解析信度耦合成因，并给出针对性改进逻辑。
+
+\subsubsection{耦合机理：中心化信度与更新过速的数学本质}
+
+\textbf{1. 中心化信度的逻辑污染 (Spatial Credit Assignment Decay)} \\
+在多智能体协作推球任务中，球体状态 $S_{ball}$ 是一个受联合动作空间 $\mathcal{A} = a_1 \times a_2 \times \dots \times a_n$ 驱动的公共随机变量。若势能函数 $\Phi(s)$ 耦合了全局坐标，则对于任一智能体 $i$，其重塑奖励项 $F_i$ 的梯度满足：
+\begin{equation}
+\nabla_{a_j} F_i \neq 0, \quad \forall j \neq i
+\end{equation}
+这意味着智能体 $i$ 的奖励反馈被智能体 $j$ 的策略噪声所污染。这种“虚假关联”会导致信度分配彻底坍缩，使智能体无法辨识自身动作与奖励提升的因果关系。
+
+\textbf{2. 高频更新下的梯度漂移 (Temporal Momentum Noise)} \\
+由于物理引擎的高频采样，势能面 $\Phi(s)$ 在时间轴上呈现高频剧烈震荡。这种不稳定性在 $1.5s$ 的推理延迟窗口内会导致梯度流的相干性损失，使得神经网络难以建立从“当前动作”到“未来势能增量”的稳态映射。
+
+\subsubsection{改进演化机制：三维解耦策略}
+
+为解决上述耦合瓶颈，我们对奖励重塑逻辑进行了以下维度重构：
+
+\begin{tcolorbox}[enhanced, colback=blue!5!white, colframe=SDUBlue, arc=2mm, title=\textbf{解耦机制的物理与数学逻辑}]
+\textbf{A. EMA 低通滤波（物理层去噪）：} 引入一阶滞后环节构建平滑势能 $\bar{\Phi}_t = \alpha \bar{\Phi}_{t-1} + (1-\alpha) \Phi_t$。
+\textit{物理逻辑：} 该措施将“瞬时力学突变”转化为“宏观演进趋势”，滤除了碰撞产生的高频毛刺，为策略梯度提供了一条极低方差的平滑下降路径。
+
+\textbf{B. 相对贡献投影（逻辑层解耦）：} 通过内积运算定义有效奖励增量：
+\begin{equation}
+F_{eff} = \text{max}(0, \langle \nabla_s \Phi, \vec{v}_{agent} \rangle)
+\end{equation}
+\textit{物理逻辑：} 基于“功”的定义，仅当智能体自身的位移矢量在势能梯度方向上有正向投影时才激活奖励。该机制强制实现了从“公共总和奖励”向“个体边际贡献”的数学隔离，从根本上解决了中心化耦合问题。
+
+\textbf{C. 准静态（Quasi-static）更新窗（策略层对冲）：} 设定更新时标 $\tau_{\Phi} \gg \tau_{\pi}$。
+\textit{物理逻辑：} 为底层网络构建一个相对静止的“参考演进场”。确保在 LLM 的推理盲窗期内，智能体依然能基于稳定的先验坡度进行自主演化，对冲了高延迟导致的控制环路失效。
+\end{tcolorbox}
 
 \subsection{工程实现：PBRS 与 State Lock 的 Prompt 注入与演进实证}
 
-针对大模型 API 带来的 $1.5s$ 推理时间盲点，我们将 PBRS 的奖励逻辑与 State Lock 的制动规则通过语义对齐注入 System Prompt。
+针对具身智能中大模型 API 带来的约 $1.5s$ 推理延迟，单纯依靠底层强化学习自发演化极难形成稳定的协作闭环。我们将 PBRS 的“远程动力引导”与 State Lock 的“近场制动规则”通过语义对齐注入 System Prompt，构建了一套对冲延迟风险的复合控制架构。
 
+\begin{tcolorbox}[enhanced, colback=blue!5!white, colframe=SDUBlue, arc=2mm, title=\textbf{PBRS 与 State Lock 的协同逻辑与延迟补偿}]
+\textbf{1. 动量梯度对冲（Momentum Gradient Hedging）：}
+PBRS 机制在全局范围内为智能体提供了指向球体的势能梯度，使其获得极高的搜索速度。然而，在零摩擦的物理模拟器中，这种高动能会导致智能体在触球瞬间产生严重的过冲（Overshoot）。
+\textbf{数学逻辑}：我们通过 System Prompt 注入 State Lock 规则。当满足临界距离条件 $\|p_a - p_b\| < \delta$ 时，系统执行动量重置：
+\begin{equation}
+v_{agent}^{new} = v_{ball}^{new} = \frac{m_a v_{agent} + m_b v_{ball}}{m_a + m_b}
+\end{equation}
+该公式模拟了瞬时的完全非弹性碰撞，将 PBRS 累积的冗余动能强制消散，实现从“高速寻球”到“稳态推球”的动力学平滑切换。
+
+\textbf{2. 异步盲区下的物理锚点（Physical Anchor）：}
+在 $1.5s$ 的推理延迟内，环境状态可能发生剧烈偏移。若无锁定机制，PBRS 的持续引导会导致智能体在延迟期间因无法及时感知触球而穿透球体或将其撞飞。
+\textbf{协同效应}：我们将 State Lock 设计为底层物理引擎的“常驻防御逻辑”。一旦触发锁定，智能体与球体在流形上坍缩为单一质点系统。这意味着在 LLM 推理的盲窗期，物理层已经提前锁定了协作拓扑，保证了控制流的连续性，使 LLM 的“慢思考”能够成功作用于“快变化”的物理实境。
+
+\textbf{3. 语义引导实证：}
+我们在 Prompt 中明确定义状态转移逻辑：\textit{“Phase 1: Maximize PBRS gradient to approach; Phase 2: Invoke State-Lock upon contact to neutralize momentum.”} 这种注入确保了演进过程不再是盲目的黑盒试错，而是具备了物理逻辑支撑的有序演化。
+\end{tcolorbox}
 \subsubsection{核心代码改动与 Prompt 语义化注入}
 \begin{lstlisting}[language=Python, caption={PBRS与State Lock的语义注入实现}]
 # --- System Prompt Enhancement Logic ---
@@ -632,33 +709,32 @@ F(s, a, s') = \gamma \Phi(s') - \Phi(s)
 \caption{不同算法组合在时延梯度下的 Episode 演进性能对比曲线}
 \end{figure}
 
-\subsection{算法优化：基于控制变量（Control Variates）的方差削减与 Advantage 调优}
+\begin{tcolorbox}[enhanced, colback=blue!5!white, colframe=SDUBlue, arc=2mm, title=\textbf{方差缩减：控制变量法与自适应权重递进推导}]
 
-在 \textit{Push Ball} 协作任务的演进后期，多智能体间的物理碰撞与动量耦合导致环境表现出极强的非平稳性（Non-stationarity）。由于球体受力瞬息万变，单一智能体感知的奖励信号往往被其他个体的随机扰动（如队友的非预期撞击）所淹没，导致策略梯度方差巨大。为此，本研究借鉴了随机模拟中的控制变量（Control Variates）思想，通过引入“确定性基准推球轨迹”来优化优势函数（Advantage Function）的估计。
-
-\subsubsection{数学原理：针对推球碰撞噪声的方差削减}
-我们定义一条在理想物理约束下的单体推球基准轨迹为 $\tau_{base}$。对于当前协同演进中的随机状态-动作对 $(s, a)$，其原始奖励信号为 $R(s, a)$。
-
-\begin{mathBox}{Advantage 函数重构}
-引入控制变量 $B(s)$（即基准轨迹的价值估计），构建重构后的优势函数 $\hat{A}$：
+\textbf{1. 优势函数与基准值（Baseline）定义：}
+在策略梯度定理中，原始优势函数定义为 $\hat{A}_t = R(\tau) - B(s)$。为了证明引入 $B(s)$ 的无偏性，需证明其期望贡献为零：
 \begin{equation}
-\hat{A}(s, a) = [R_{push}(s, a) + \gamma V(s') - V(s)] - \omega \cdot [R_{base}(s) - B(s)]
+\mathbb{E}_{a \sim \pi_\theta} \left[ \nabla_\theta \log \pi_\theta(a|s) \cdot B(s) \right] = B(s) \cdot \nabla_\theta \sum_{a} \pi_\theta(a|s) = B(s) \cdot \nabla_\theta (1) = 0
 \end{equation}
 
-在 \textit{Push Ball} 场景中，$R_{base}$ 代表了排除异构冲突后的纯净奖励。通过选取最优权重 $\omega$，新估计量 $\hat{A}$ 能够抵消掉因队友误撞或位置重叠产生的随机噪声。根据方差削减理论，新估计量的方差满足 $\text{Var}(\hat{A}) = (1 - \rho^2) \text{Var}(A_{raw})$，其中 $\rho$ 为原始信号与基准信号的相关系数。这确保了模型能在复杂的“碰撞迷雾”中，精准识别有效的施力方向。
-
-\subsubsection{动态调优：Advantage 函数权重的加权规划思想}
-在工程落地中，权重 $\omega$ 随推球过程的位形动态演化。其加权规划的核心逻辑在于：当智能体与球的相对位置显著偏离基准路径时，减小 $\omega$ 以允许模型探索新的纠偏角度；当智能体处于标准推球轨迹时，增大 $\omega$ 以实现极高的方差削减增益。
-\end{mathBox}
-\begin{mathBox}{自适应权重规划 $\omega^*$}
-我们采用基于推球策略余弦相似度的自适应权重计算方法：
+\textbf{2. 引入控制变量进行方差优化：}
+我们将基准项视为一个期望已知且相关的控制变量，构建修正后的优势估计器 $A^*(s, a) = \hat{A} + w(B - \mathbb{E}[B])$。其方差表达式为：
 \begin{equation}
-\omega^* = \eta \cdot \exp\left( -\frac{\| \pi_{push} - \pi_{base} \|^2}{2\sigma^2} \right) \cdot \frac{\text{Cov}(A_{push}, R_{base})}{\text{Var}(R_{base})}
+Var(A^*) = Var(\hat{A}) + w^2 Var(B) + 2w \text{Cov}(\hat{A}, B)
 \end{equation}
-其中，$\eta$ 为自适应学习率，$\pi_{push}$ 为当前策略。
-\end{mathBox}
+对 $w$ 求一阶导并令其为 $0$，得到最优系数 $w^* = -\frac{\text{Cov}(\hat{A}, B)}{Var(B)}$。此时最小方差满足：
+\begin{equation}
+Var(A^*)_{min} = (1 - \rho_{\hat{A}, B}^2) Var(\hat{A})
+\end{equation}
+其中 $\rho$ 为相关系数。该式从数学上证明了只要基准值与优势函数正相关，方差必将缩减。
 
-该加权机制确保了系统在非平稳的协同环境下，依然能够精准捕捉到超越“平庸基准”的有用信号，有效防止了由于碰撞噪声导致的梯度爆炸。
+\textbf{3. 递进：基于高斯相似度核的自适应权重 $w(s)$：}
+经典的 $w^*$ 是全局静态的，但在复杂博弈环境下，状态空间的异质性要求权重具备局部自适应性。我们引入高斯相似度核 $K(s, s_i) = \exp(-\frac{\|s-s_i\|^2}{2\sigma^2})$，将最优权重演进为：
+\begin{equation}
+w^*(s) = \sum_{i} \alpha_i K(s, s_i) \cdot w_i^*
+\end{equation}
+\textbf{结论：} 这种递进方法使得模型在面对 MPE 的非平稳分布时，能够通过核函数的局部平滑作用，动态调整方差缩减的强度，从而在保障无偏性的同时，实现了比传统控制变量法更稳定的梯度流。
+\end{tcolorbox}
 
 \subsubsection{实验实证：协同推球环境下的梯度方差对比曲线}
 图 4.4 展示了在引入控制变量优化后，\textit{Push Ball} 任务演进过程中梯度范数（Gradient Norm）的波动对比。

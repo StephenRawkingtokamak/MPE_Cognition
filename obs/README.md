@@ -348,15 +348,6 @@ for i in range(3):
 - [PROJECT_OVERVIEW.md](../PROJECT_OVERVIEW.md) - 项目整体概览
 - [PettingZoo MPE 文档](https://pettingzoo.farama.org/environments/mpe/)
 
-## 🤝 贡献
-
-欢迎贡献新的解析器！步骤：
-1. Fork 仓库
-2. 创建 `parse_<env>_obs.py`
-3. 遵循现有格式和最佳实践
-4. 提交 Pull Request
-
 ---
 
-**维护者**: HuangShengZeBlueSky  
-**最后更新**: 2026-01-24
+

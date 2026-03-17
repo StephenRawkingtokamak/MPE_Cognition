@@ -264,8 +264,4 @@ result = run_benchmark(env_name="tag", provider="qwen", episodes=5, seed_start=1
 - 重新运行获得带seed的结果
 - 或在报告中说明"历史数据未记录seed"
 
-## 下一步
 
-- [RUN_10_EPISODES_GUIDE.md](RUN_10_EPISODES_GUIDE.md) - 10个episode的详细指南
-- [LOGGING_FORMAT_SUMMARY.md](LOGGING_FORMAT_SUMMARY.md) - 日志格式说明
-- [BENCHMARK_REVIEW.md](BENCHMARK_REVIEW.md) - Benchmark分析

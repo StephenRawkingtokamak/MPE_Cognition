@@ -269,9 +269,8 @@ python setup_api_keys.py --status
 ## 🆘 获取帮助
 
 如果遇到问题：
-1. 查看 [GitHub Issues](https://github.com/HuangShengZeBlueSky/MPE_muiltiagent_benchmark/issues)
-2. 运行 `python setup_api_keys.py --status` 检查配置
-3. 查看 `utils_api.py` 中的实现细节
+1. 运行 `python setup_api_keys.py --status` 检查配置
+2. 查看 `utils_api.py` 中的实现细节
 
 ---
 
